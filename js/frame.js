@@ -6,46 +6,88 @@
 
 Frame = function(userOptions){
 	if(typeof FlashCanvas != 'undefined'){
+		// disable right-click context menu for flashcanvas
 		window.FlashCanvasOptions = {
 			disableContextMenu:true
 		};
 	}
 
-		frame = {		
+	var $ = jQuery,
+		Frame = this,
+		canvas = null,
+		ctx = null,
+		frame = {		// frame information
+			file:null,				// frame image file
+			thickness:0,			// frame width/thickness in mm
+			thicknessPx:0,			// frame width/thickness in pixels
+			width:0,				// the frame width in pixels
+			height:0				// the frame height in pixels
 		},
-		slip = {		
+		slip = {		// slip information
+			file:null,				// slip image file
+			thickness:0,			// slip width/thickness in mm
+			thicknessPx:0			// slip width/thickness in pixels
 		},
-		mount = {		
+		mount = {		// mount information
+			lineColor:'#efefef',	// the colour of the lines separating mount layers
+			layers:[],				// the mount layers
 
+			imagePadding:50,		// padding between photos in mm (only used if frame contains multiple photos - can be a numerical value or object)
+			imagePaddingPx:{		// padding between photos in pixels (is an object)
+				row:0,
+				column:0
 			},
 
+			sections:[				// mount photo sections
 				[
 					{
+						width:0,		// image width in mm
+						height:0,		// image height in mm
+						widthPx:0,		// image width in pixels
+						heightPx:0		// image height in pixels
 					}
 				]
 			]
 		},
+		photos = [],	// list of photos for the frame
+		centerPoint = {	// the center of the canvas
+			x:0,
+			y:0
 		},
 		defaultOptions = {
+			pxPerMM:1,				// how many pixels per millimeter
+			allowZoom:true,			// whether to allow click-to-zoom functionality
+			allowSave:true,			// whether to allow saving to png
+			autoResize:true,		// whether to aut-resize the frame to fit the canvas (turning this off could cause the frame to be cropped)
+			fileLoadTries:1			// the amount of times to try and load an image (frame, slip, mount, picture etc), if it fails (ie; 404)
 		},
+		options = {};
 
+	// image handles
+	var loaded = 0,
+		imageCount;
 
 
 	/**
+	 * Initialises the frame
 	 */
 	this.init = function(userOptions){
 		var i = 0;
 
+		// set the user defined options
 		options = $.extend(true, {}, userOptions || {});
 		$.extend(frame, options.frame || {});
 		$.extend(slip, options.slip || {});
 		$.extend(mount, options.mount || {});
 		$.extend(photos, options.photos || []);
 
+		// define the canvas object
 		if(canvas == null){
 			if(jQuery){
+				// jQuery exists - use it
 				canvas = ((options.canvas instanceof jQuery) ? options.canvas : $(options.canvas)).get(0);
 			}else{
+				// jQuery doesn't exist - assume canvas is an ID
 				canvas = document.getElementById(options.canvas);
 			}
 
@@ -57,11 +99,15 @@ Frame = function(userOptions){
 			}
 		}
 
+		// set the canvas width/height correctly
 		canvas.width = canvas.offsetWidth;
 		canvas.height = canvas.offsetHeight;
 		centerPoint = {
+			x:canvas.width / 2,
+			y:canvas.height / 2
 		};
 
+		// define the center of the canvas as coordinate 0,0
 		ctx.translate(centerPoint.x, centerPoint.y);
 
 		// remove any unwanted option variables
@@ -227,6 +273,8 @@ Frame = function(userOptions){
 	};
 
 	/**
+	 * Starts the actual drawing process
+	 * and calculating te size of the frame
 	 */
 	var postLoadInit = function(){
 		calculateSizes();
@@ -234,21 +282,27 @@ Frame = function(userOptions){
 	};
 
 	/**
+	 * Callback for successful image loads
 	 */
 	var imageLoadCallback = function(){
 		loaded++;
 		if(loaded == imageCount){
+			// all images have been loaded
 			postLoadInit();
 		}
 	};
 
 	/**
+	 * Callback for failed image loads
 	 *
-	 * @param file - Object containing file information and load count
-	 * @return {Boolean} - Returns false if retry limit reached
+	 * @param file
+	 * @return {Boolean}
 	 */
 	var imageErrorCallback = function(file){
 		if((file.file === null) || (file.file.loadCount >= options.fileLoadTries)){
+			// we have reached the max failed attempts
+			// not sure whether we should throw up an error here or just carry on loading
+			// for now, mark it as loaded and set the image to null
 			file.file = null;
 			if(!isNaN(file.photoNum)){
 				photos[file.photoNum] = null;
@@ -257,7 +311,9 @@ Frame = function(userOptions){
 			return false;
 		}
 
+		// re-define the image src, to force it to-reload
 		file.file.src = file.file.src;
+		// increment the load count
 		file.file.loadCount++;
 	};
 
@@ -819,6 +875,7 @@ Frame = function(userOptions){
 	};
 
 	/**
+	 * Saves the frame as an image
 	 */
 	this.save = function(){
 		if(typeof canvas2png != 'undefined'){
@@ -828,12 +885,16 @@ Frame = function(userOptions){
 				alert('Error saving image, please try again');
 			}
 		}else{
+			// no image save functionality exists
 			alert('No method for saving the image exists');
 		}
 	};
 
 
+	// run some JQuery only functionality
 	if(jQuery){
+		// if we're not using the flash replacement, run the re-size functionality
+		// flashcanvas can't handle this as it makes the browser un-responsive and doesn't resize anyway.
 		if(typeof FlashCanvas == 'undefined'){
 			$(window).resize(function(){
 				Frame.init();
@@ -842,6 +903,8 @@ Frame = function(userOptions){
 	}
 
 	/**
+	 * Takes a hexedecimal or RGB colour and returns
+	 * a colour that is different by the specified shade.
 	 *
 	 *
 	 * colour can be defined as a Hexdecimal value:
@@ -926,6 +989,6 @@ Frame = function(userOptions){
 	};
 
 
+	// initialise the plugin
 	this.init(userOptions);
 };
-

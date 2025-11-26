@@ -1,7 +1,7 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 	<head>
-		<title>Rahul-Task</title>
+		<title>Solace-infotech</title>
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
 		<style>
 			html{
@@ -19,10 +19,12 @@
 				display:block;
 				margin:0 auto;
 				width:100%;
-				min-width:60px;
+				min-width:200px;
 				height:100%;
-				min-height:60px;
-				cursor:pointer;
+				min-height:200px;
+				cursor:default;
+				border:none;
+				background:transparent;
 			}
 			img{border:solid 1px; margin:10px;}
 			.selected{
@@ -132,12 +134,14 @@
 								<div class="col-md-12">
 									<h5>Sample Images (Nature & Landscapes):</h5>
 									<div id="samplePhotos" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
-										<img src="samples/Nature_Landscape.webp" class="sample-photo" style="height:60px;width:60px;object-fit:cover;cursor:pointer;border:2px solid #ccc;" onclick="selectPhoto('samples/Nature_Landscape.webp')" title="Nature Landscape">
-										<img src="samples/mountain_landscape.webp" class="sample-photo" style="height:60px;width:60px;object-fit:cover;cursor:pointer;border:2px solid #ccc;" onclick="selectPhoto('samples/mountain_landscape.webp')" title="Mountain Landscape">
-										<img src="samples/Forest_landscape.webp" class="sample-photo" style="height:60px;width:60px;object-fit:cover;cursor:pointer;border:2px solid #ccc;" onclick="selectPhoto('samples/Forest_landscape.webp')" title="Forest Landscape">
-										<img src="samples/Ocean_landscape.webp" class="sample-photo" style="height:60px;width:60px;object-fit:cover;cursor:pointer;border:2px solid #ccc;" onclick="selectPhoto('samples/Ocean_landscape.webp')" title="Ocean Landscape">
-										<img src="samples/Sunset_landscape.webp" class="sample-photo" style="height:60px;width:60px;object-fit:cover;cursor:pointer;border:2px solid #ccc;" onclick="selectPhoto('samples/Sunset_landscape.webp')" title="Sunset Landscape">
-										<img src="samples/Desert_landscape.webp" class="sample-photo" style="height:60px;width:60px;object-fit:cover;cursor:pointer;border:2px solid #ccc;" onclick="selectPhoto('samples/Desert_landscape.webp')" title="Desert Landscape">
+										<?php
+										$sampleFiles = glob('samples/*.{webp,jpg,jpeg,png,JPG,JPEG,PNG}', GLOB_BRACE);
+										foreach($sampleFiles as $file) {
+											$fileName = basename($file);
+											$displayName = str_replace(array('_', '.webp', '.jpg', '.jpeg', '.png'), array(' ', '', '', '', ''), $fileName);
+											echo '<img src="'.$file.'" class="sample-photo" style="height:60px;width:60px;object-fit:cover;cursor:pointer;border:2px solid #ccc;" onclick="selectPhoto(\''.$file.'\')" title="'.$displayName.'">';
+										}
+										?>
 									</div>
 								</div>
 								
@@ -186,15 +190,17 @@
 	</div>
 <script>
 	var selectedPhoto = '<?= $session_picture;?>';
-	var selectedFrame = 'fr1.png';
+	var selectedFrame = 'fr1.png'; // Default to first frame
 	var currentWidth = <?= $width; ?>;
 	var currentHeight = <?= $height; ?>;
+	var renderTimeout = null;
 
 	function setFrame(value) {
 		if (value == null) {
 			value = 'fr1.png';
 		}
 		selectedFrame = (typeof value === 'string') ? value : value.src;
+		// Force immediate re-render
 		renderCanvas();
 		$('.frame-option').removeClass('selected');
 		if (typeof value !== 'string') $(value).addClass('selected');
@@ -202,40 +208,133 @@
 
 	function selectPhoto(photo) {
 		selectedPhoto = photo;
+		// Force immediate re-render
 		renderCanvas();
 		$('.uploaded-photo, .sample-photo').removeClass('selected').css('border', '2px solid #ccc');
 		$("img[src='"+photo+"']").addClass('selected').css('border', '2px solid #007bff');
 	}
 
 	function renderCanvas() {
+		// Clear any pending renders
+		if (renderTimeout) {
+			clearTimeout(renderTimeout);
+		}
+		
 		var canvas = document.getElementById('testCanvas');
+		if (!canvas) return;
+		
+		// Set canvas dimensions
 		$('#testCanvas').css({
 			'width': currentWidth + 'px',
 			'height': currentHeight + 'px'
 		});
-		if (canvas) {
-			canvas.width = currentWidth;
-			canvas.height = currentHeight;
+		canvas.width = currentWidth;
+		canvas.height = currentHeight;
+		
+		// Clear canvas completely
+		var ctx = canvas.getContext('2d');
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		
+		// If no photo is selected, show placeholder
+		if (!selectedPhoto || selectedPhoto === '') {
+			ctx.fillStyle = '#f5f5f5';
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+			ctx.fillStyle = '#999';
+			ctx.font = '16px Arial';
+			ctx.textAlign = 'center';
+			ctx.fillText('Select a photo to preview', canvas.width / 2, canvas.height / 2);
+			return;
 		}
-		var myFrame = new Frame({
+		
+		// Calculate dimensions
+		var frameThickness = 15; // mm - frame border thickness
+		var matThickness = 40; // mm - pink mat thickness around image
+		
+		// Calculate mat area (inside frame)
+		var matWidth = currentWidth - (frameThickness * 2);
+		var matHeight = currentHeight - (frameThickness * 2);
+		
+		// Calculate image area (inside mat, centered)
+		var imageWidth = matWidth - (matThickness * 2);
+		var imageHeight = matHeight - (matThickness * 2);
+		
+		// Ensure positive dimensions
+		imageWidth = Math.max(imageWidth, 50);
+		imageHeight = Math.max(imageHeight, 50);
+		
+		// Store frame instance globally for cleanup
+		if (window.currentFrameInstance) {
+			window.currentFrameInstance = null;
+		}
+		
+		// Create Frame instance with pink mount layer
+		window.currentFrameInstance = new Frame({
 			canvas: $('#testCanvas'),
+			pxPerMM: 1,
 			frame: {
 				file: selectedFrame,
-				thickness: 15
+				thickness: frameThickness
 			},
 			mount: {
-				imagePadding: { row: 50, column: 75 },
+				layers: [
+					{
+						color: '#ff69b4', // Pink color for mat
+						padding: {
+							top: matThickness,
+							bottom: matThickness,
+							left: matThickness,
+							right: matThickness
+						}
+					}
+				],
+				imagePadding: { row: 0, column: 0 }, // No extra padding
 				sections: [
 					[
 						{
-							width: 100,
-							height: 100
+							width: imageWidth,
+							height: imageHeight
 						}
 					]
 				]
 			},
 			photos: [selectedPhoto]
 		});
+		
+		// After Frame library renders, redraw the image centered and properly fitted
+		var redrawImage = function(attempts) {
+			attempts = attempts || 0;
+			if (attempts > 10) return;
+			
+			setTimeout(function() {
+				var photoImg = new Image();
+				photoImg.crossOrigin = 'anonymous';
+				photoImg.onload = function() {
+					// Frame library uses center-origin (0,0 is at canvas center)
+					// The image section is already calculated and centered by Frame library
+					// We just need to redraw the image to cover any gray background
+					
+					// Calculate image position in center-origin coordinates
+					// Image should be centered, so it's at (-imageWidth/2, -imageHeight/2) in center-origin
+					// Convert to canvas coordinates: add canvas center
+					var centerX = canvas.width / 2;
+					var centerY = canvas.height / 2;
+					var imgX = centerX - (imageWidth / 2);
+					var imgY = centerY - (imageHeight / 2);
+					
+					// Draw image centered and fitted (this will cover the gray background from Frame library)
+					ctx.globalCompositeOperation = 'source-over';
+					ctx.drawImage(photoImg, imgX, imgY, imageWidth, imageHeight);
+				};
+				photoImg.onerror = function() {
+					if (attempts < 5) {
+						redrawImage(attempts + 1);
+					}
+				};
+				photoImg.src = selectedPhoto;
+			}, 200 + (attempts * 50));
+		};
+		
+		redrawImage(0);
 	}
 
 	function updatePreview() {
@@ -245,6 +344,7 @@
 		if (newWidth > 0 && newHeight > 0 && !isNaN(newWidth) && !isNaN(newHeight)) {
 			currentWidth = newWidth;
 			currentHeight = newHeight;
+			// Force immediate re-render
 			renderCanvas();
 			console.log('Preview updated: ' + currentWidth + 'x' + currentHeight);
 		} else {
@@ -260,22 +360,43 @@
 	}
 
 	$(window).on('load', function () {
+		// Select first frame by default
 		$('#fselect').addClass('selected');
-		if (selectedPhoto) {
+		selectedFrame = 'fr1.png';
+		
+		// Auto-select first sample photo by default
+		var firstSample = $('.sample-photo').first();
+		if (firstSample.length > 0) {
+			selectedPhoto = firstSample.attr('src');
+			firstSample.addClass('selected').css('border', '2px solid #007bff');
+		} else if (!selectedPhoto || selectedPhoto === '') {
+			// If no sample photos, check uploaded photos
+			var firstUploaded = $('.uploaded-photo').first();
+			if (firstUploaded.length > 0) {
+				selectedPhoto = firstUploaded.attr('src');
+				firstUploaded.addClass('selected').css('border', '2px solid #007bff');
+			}
+		} else {
 			$("img[src='"+selectedPhoto+"']").addClass('selected').css('border', '2px solid #007bff');
 		}
+		
+		// Initial render
 		renderCanvas();
 		
+		// Tab switching
 		$('.nav-tabs a').on('click', function(e) {
 			e.preventDefault();
 			var targetTab = $(this).attr('href').substring(1);
 			switchTab(targetTab);
 		});
 		
-		$('#updatePreviewBtn').on('click', function() {
+		// Update preview button click
+		$('#updatePreviewBtn').on('click', function(e) {
+			e.preventDefault();
 			updatePreview();
 		});
 		
+		// Enter key on width/height inputs
 		$('#inputWidth, #inputHeight').on('keypress', function(e) {
 			if (e.which === 13) {
 				e.preventDefault();
@@ -283,25 +404,59 @@
 			}
 		});
 		
+		// Real-time updates on keyup
 		var previewTimeout;
-		$('#inputWidth, #inputHeight').on('input', function() {
+		$('#inputWidth, #inputHeight').on('keyup input', function(e) {
 			clearTimeout(previewTimeout);
-			previewTimeout = setTimeout(function() {
-				updatePreview();
-			}, 500);
+			var newWidth = parseInt($('#inputWidth').val());
+			var newHeight = parseInt($('#inputHeight').val());
+			
+			if (newWidth > 0 && newHeight > 0 && !isNaN(newWidth) && !isNaN(newHeight)) {
+				previewTimeout = setTimeout(function() {
+					currentWidth = newWidth;
+					currentHeight = newHeight;
+					renderCanvas();
+				}, 100); // Reduced delay for more responsive updates
+			}
 		});
 	});
 	
 	$(document).ready(function() {
+		// Tab switching
 		$('.nav-tabs a').on('click', function(e) {
 			e.preventDefault();
 			var targetTab = $(this).attr('href').substring(1);
 			switchTab(targetTab);
 		});
 		
+		// Update preview button
 		$('#updatePreviewBtn').on('click', function(e) {
 			e.preventDefault();
 			updatePreview();
+		});
+		
+		// Enter key handler
+		$('#inputWidth, #inputHeight').on('keypress', function(e) {
+			if (e.which === 13) {
+				e.preventDefault();
+				updatePreview();
+			}
+		});
+		
+		// Real-time keyup updates
+		var previewTimeout;
+		$('#inputWidth, #inputHeight').on('keyup input', function(e) {
+			clearTimeout(previewTimeout);
+			var newWidth = parseInt($('#inputWidth').val());
+			var newHeight = parseInt($('#inputHeight').val());
+			
+			if (newWidth > 0 && newHeight > 0 && !isNaN(newWidth) && !isNaN(newHeight)) {
+				previewTimeout = setTimeout(function() {
+					currentWidth = newWidth;
+					currentHeight = newHeight;
+					renderCanvas();
+				}, 100);
+			}
 		});
 	});
 
