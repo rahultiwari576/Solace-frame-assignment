@@ -4,124 +4,64 @@
  * @version 1
  */
 
-// Frame constructor function that creates a frame rendering system for canvas elements --BY Rahul Kumar--26/11
 Frame = function(userOptions){
-	// Checking if FlashCanvas library is available for older browser support --BY Rahul Kumar--26/11
 	if(typeof FlashCanvas != 'undefined'){
-		// Disabling right-click context menu for flashcanvas to prevent browser menu interference --BY Rahul Kumar--26/11
 		window.FlashCanvasOptions = {
 			disableContextMenu:true
 		};
 	}
 
-	// Initializing variables for jQuery reference, Frame instance, canvas element, and 2D context --BY Rahul Kumar--26/11
-	var $ = jQuery,  // Storing jQuery reference for convenience --BY Rahul Kumar--26/11
-		Frame = this,  // Storing reference to current Frame instance --BY Rahul Kumar--26/11
-		canvas = null,  // Canvas DOM element that will be used for rendering --BY Rahul Kumar--26/11
-		ctx = null,  // 2D rendering context for drawing operations on canvas --BY Rahul Kumar--26/11
-		// Frame object to store frame image, dimensions, and thickness information --BY Rahul Kumar--26/11
 		frame = {		
-			file:null,				// Frame image file path or image object --BY Rahul Kumar--26/11
-			thickness:0,			// Frame width/thickness in millimeters --BY Rahul Kumar--26/11
-			thicknessPx:0,			// Frame width/thickness converted to pixels --BY Rahul Kumar--26/11
-			width:0,				// The total frame width in pixels --BY Rahul Kumar--26/11
-			height:0				// The total frame height in pixels --BY Rahul Kumar--26/11
 		},
-		// Slip object to store slip (inner border) image and thickness information --BY Rahul Kumar--26/11
 		slip = {		
-			file:null,				// Slip image file path or image object --BY Rahul Kumar--26/11
-			thickness:0,			// Slip width/thickness in millimeters --BY Rahul Kumar--26/11
-			thicknessPx:0			// Slip width/thickness converted to pixels --BY Rahul Kumar--26/11
 		},
-		// Mount object to store mount (mat) layers, padding, and section information --BY Rahul Kumar--26/11
 		mount = {		
-			lineColor:'#efefef',	// The color of the lines separating mount layers --BY Rahul Kumar--26/11
-			layers:[],				// Array of mount layer objects with padding and styling --BY Rahul Kumar--26/11
 
-			imagePadding:50,		// Padding between photos in millimeters (can be number or object) --BY Rahul Kumar--26/11
-			imagePaddingPx:{		// Padding between photos in pixels (always an object) --BY Rahul Kumar--26/11
-				row:0,  // Vertical padding between photo rows in pixels --BY Rahul Kumar--26/11
-				column:0  // Horizontal padding between photo columns in pixels --BY Rahul Kumar--26/11
 			},
 
-			sections:[				// Array of mount photo sections defining layout grid --BY Rahul Kumar--26/11
 				[
 					{
-						width:0,		// Image width in millimeters --BY Rahul Kumar--26/11
-						height:0,		// Image height in millimeters --BY Rahul Kumar--26/11
-						widthPx:0,		// Image width converted to pixels --BY Rahul Kumar--26/11
-						heightPx:0		// Image height converted to pixels --BY Rahul Kumar--26/11
 					}
 				]
 			]
 		},
-		photos = [],	// Array of photo image objects or paths to be displayed in frame --BY Rahul Kumar--26/11
-		centerPoint = {	// Object storing the center coordinates of the canvas --BY Rahul Kumar--26/11
-			x:0,  // X coordinate of canvas center point --BY Rahul Kumar--26/11
-			y:0  // Y coordinate of canvas center point --BY Rahul Kumar--26/11
 		},
-		// Default configuration options for frame rendering behavior --BY Rahul Kumar--26/11
 		defaultOptions = {
-			pxPerMM:1,				// Conversion factor: how many pixels per millimeter --BY Rahul Kumar--26/11
-			allowZoom:true,			// Whether to allow click-to-zoom functionality on canvas --BY Rahul Kumar--26/11
-			allowSave:true,			// Whether to allow saving canvas as PNG image --BY Rahul Kumar--26/11
-			autoResize:true,		// Whether to auto-resize frame to fit canvas (prevents cropping) --BY Rahul Kumar--26/11
-			fileLoadTries:1			// Number of retry attempts for loading images if they fail (404 errors) --BY Rahul Kumar--26/11
 		},
-		options = {};  // User-provided options that will override defaults --BY Rahul Kumar--26/11
 
-	// Image loading tracking variables --BY Rahul Kumar--26/11
-	var loaded = 0,  // Counter for number of images successfully loaded --BY Rahul Kumar--26/11
-		imageCount;  // Total number of images that need to be loaded --BY Rahul Kumar--26/11
 
 
 	/**
-	 * Initialises the frame with user options and sets up canvas for rendering --BY Rahul Kumar--26/11
 	 */
 	this.init = function(userOptions){
 		var i = 0;
 
-		// Deep copying user-defined options to prevent modifying original object --BY Rahul Kumar--26/11
 		options = $.extend(true, {}, userOptions || {});
-		// Merging user frame options with default frame object --BY Rahul Kumar--26/11
 		$.extend(frame, options.frame || {});
-		// Merging user slip options with default slip object --BY Rahul Kumar--26/11
 		$.extend(slip, options.slip || {});
-		// Merging user mount options with default mount object --BY Rahul Kumar--26/11
 		$.extend(mount, options.mount || {});
-		// Merging user photos array with default photos array --BY Rahul Kumar--26/11
 		$.extend(photos, options.photos || []);
 
-		// Defining the canvas object from user options if not already set --BY Rahul Kumar--26/11
 		if(canvas == null){
 			if(jQuery){
-				// jQuery exists - using jQuery to get canvas element (handles both jQuery object and selector) --BY Rahul Kumar--26/11
 				canvas = ((options.canvas instanceof jQuery) ? options.canvas : $(options.canvas)).get(0);
 			}else{
-				// jQuery doesn't exist - assuming canvas is an element ID string --BY Rahul Kumar--26/11
 				canvas = document.getElementById(options.canvas);
 			}
 
-			// Validating that canvas element was found, returning false if not found --BY Rahul Kumar--26/11
 			if(typeof canvas === 'undefined'){
 				canvas = null;
 				return false;
 			}else{
-				// Getting 2D rendering context from canvas for drawing operations --BY Rahul Kumar--26/11
 				ctx = canvas.getContext('2d');
 			}
 		}
 
-		// Setting canvas width and height to match its displayed dimensions (offsetWidth/offsetHeight) --BY Rahul Kumar--26/11
 		canvas.width = canvas.offsetWidth;
 		canvas.height = canvas.offsetHeight;
-		// Calculating center point coordinates based on canvas dimensions --BY Rahul Kumar--26/11
 		centerPoint = {
-			x:canvas.width / 2,  // X coordinate of canvas center --BY Rahul Kumar--26/11
-			y:canvas.height / 2  // Y coordinate of canvas center --BY Rahul Kumar--26/11
 		};
 
-		// Translating canvas coordinate system so center point becomes (0,0) for easier positioning --BY Rahul Kumar--26/11
 		ctx.translate(centerPoint.x, centerPoint.y);
 
 		// remove any unwanted option variables
@@ -287,51 +227,37 @@ Frame = function(userOptions){
 	};
 
 	/**
-	 * Starts the actual drawing process after all images are loaded and calculates frame size --BY Rahul Kumar--26/11
 	 */
 	var postLoadInit = function(){
-		// Calculating all frame dimensions, padding, and section sizes in pixels --BY Rahul Kumar--26/11
 		calculateSizes();
-		// Drawing the complete frame with all components (frame, mount, photos) --BY Rahul Kumar--26/11
 		Frame.draw();
 	};
 
 	/**
-	 * Callback function executed when an image successfully loads --BY Rahul Kumar--26/11
 	 */
 	var imageLoadCallback = function(){
-		// Incrementing loaded image counter --BY Rahul Kumar--26/11
 		loaded++;
-		// Checking if all required images have finished loading --BY Rahul Kumar--26/11
 		if(loaded == imageCount){
-			// All images have been loaded - proceed with frame initialization and drawing --BY Rahul Kumar--26/11
 			postLoadInit();
 		}
 	};
 
 	/**
-	 * Callback function executed when an image fails to load --BY Rahul Kumar--26/11
 	 *
 	 * @param file - Object containing file information and load count
 	 * @return {Boolean} - Returns false if retry limit reached
 	 */
 	var imageErrorCallback = function(file){
-		// Checking if file is null or maximum retry attempts have been reached --BY Rahul Kumar--26/11
 		if((file.file === null) || (file.file.loadCount >= options.fileLoadTries)){
-			// Maximum failed attempts reached - marking image as null and continuing without it --BY Rahul Kumar--26/11
 			file.file = null;
-			// If this was a photo, marking the photo array position as null --BY Rahul Kumar--26/11
 			if(!isNaN(file.photoNum)){
 				photos[file.photoNum] = null;
 			}
-			// Calling load callback to continue initialization process --BY Rahul Kumar--26/11
 			imageLoadCallback();
 			return false;
 		}
 
-		// Re-defining the image src to force a reload attempt --BY Rahul Kumar--26/11
 		file.file.src = file.file.src;
-		// Incrementing the load count to track retry attempts --BY Rahul Kumar--26/11
 		file.file.loadCount++;
 	};
 
@@ -893,31 +819,22 @@ Frame = function(userOptions){
 	};
 
 	/**
-	 * Saves the rendered frame canvas as a PNG image file --BY Rahul Kumar--26/11
 	 */
 	this.save = function(){
-		// Checking if canvas2png function is available for image saving --BY Rahul Kumar--26/11
 		if(typeof canvas2png != 'undefined'){
 			try{
-				// Attempting to save canvas as PNG image with filename 'frame' --BY Rahul Kumar--26/11
 				canvas2png(canvas, {name:'frame'});
 			}catch(e){
-				// Displaying error alert if save operation fails --BY Rahul Kumar--26/11
 				alert('Error saving image, please try again');
 			}
 		}else{
-			// No image save functionality exists - displaying alert to inform user --BY Rahul Kumar--26/11
 			alert('No method for saving the image exists');
 		}
 	};
 
 
-	// Running jQuery-specific functionality for window resize handling --BY Rahul Kumar--26/11
 	if(jQuery){
-		// If FlashCanvas is not being used, adding window resize handler to reinitialize frame --BY Rahul Kumar--26/11
-		// FlashCanvas can't handle resize as it makes browser unresponsive and doesn't resize properly --BY Rahul Kumar--26/11
 		if(typeof FlashCanvas == 'undefined'){
-			// Binding window resize event to reinitialize frame when window size changes --BY Rahul Kumar--26/11
 			$(window).resize(function(){
 				Frame.init();
 			});
@@ -925,7 +842,6 @@ Frame = function(userOptions){
 	}
 
 	/**
-	 * Takes a hexadecimal or RGB color and returns a color that is different by the specified shade --BY Rahul Kumar--26/11
 	 *
 	 *
 	 * colour can be defined as a Hexdecimal value:
@@ -1010,6 +926,6 @@ Frame = function(userOptions){
 	};
 
 
-	// Initializing the Frame plugin with user-provided options to start rendering process --BY Rahul Kumar--26/11
 	this.init(userOptions);
 };
+
