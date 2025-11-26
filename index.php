@@ -214,128 +214,62 @@
 		$("img[src='"+photo+"']").addClass('selected').css('border', '2px solid #007bff');
 	}
 
-	function renderCanvas() {
-		// Clear any pending renders
-		if (renderTimeout) {
-			clearTimeout(renderTimeout);
-		}
-		
-		var canvas = document.getElementById('testCanvas');
-		if (!canvas) return;
-		
-		// Set canvas dimensions
-		$('#testCanvas').css({
-			'width': currentWidth + 'px',
-			'height': currentHeight + 'px'
-		});
-		canvas.width = currentWidth;
-		canvas.height = currentHeight;
-		
-		// Clear canvas completely
-		var ctx = canvas.getContext('2d');
-		ctx.clearRect(0, 0, canvas.width, canvas.height);
-		
-		// If no photo is selected, show placeholder
-		if (!selectedPhoto || selectedPhoto === '') {
-			ctx.fillStyle = '#f5f5f5';
-			ctx.fillRect(0, 0, canvas.width, canvas.height);
-			ctx.fillStyle = '#999';
-			ctx.font = '16px Arial';
-			ctx.textAlign = 'center';
-			ctx.fillText('Select a photo to preview', canvas.width / 2, canvas.height / 2);
-			return;
-		}
-		
-		// Calculate dimensions
-		var frameThickness = 15; // mm - frame border thickness
-		var matThickness = 40; // mm - pink mat thickness around image
-		
-		// Calculate mat area (inside frame)
-		var matWidth = currentWidth - (frameThickness * 2);
-		var matHeight = currentHeight - (frameThickness * 2);
-		
-		// Calculate image area (inside mat, centered)
-		var imageWidth = matWidth - (matThickness * 2);
-		var imageHeight = matHeight - (matThickness * 2);
-		
-		// Ensure positive dimensions
-		imageWidth = Math.max(imageWidth, 50);
-		imageHeight = Math.max(imageHeight, 50);
-		
-		// Store frame instance globally for cleanup
-		if (window.currentFrameInstance) {
-			window.currentFrameInstance = null;
-		}
-		
-		// Create Frame instance with pink mount layer
-		window.currentFrameInstance = new Frame({
-			canvas: $('#testCanvas'),
-			pxPerMM: 1,
-			frame: {
-				file: selectedFrame,
-				thickness: frameThickness
-			},
-			mount: {
-				layers: [
-					{
-						color: '#ff69b4', // Pink color for mat
-						padding: {
-							top: matThickness,
-							bottom: matThickness,
-							left: matThickness,
-							right: matThickness
-						}
-					}
-				],
-				imagePadding: { row: 0, column: 0 }, // No extra padding
-				sections: [
-					[
-						{
-							width: imageWidth,
-							height: imageHeight
-						}
-					]
-				]
-			},
-			photos: [selectedPhoto]
-		});
-		
-		// After Frame library renders, redraw the image centered and properly fitted
-		var redrawImage = function(attempts) {
-			attempts = attempts || 0;
-			if (attempts > 10) return;
-			
-			setTimeout(function() {
-				var photoImg = new Image();
-				photoImg.crossOrigin = 'anonymous';
-				photoImg.onload = function() {
-					// Frame library uses center-origin (0,0 is at canvas center)
-					// The image section is already calculated and centered by Frame library
-					// We just need to redraw the image to cover any gray background
-					
-					// Calculate image position in center-origin coordinates
-					// Image should be centered, so it's at (-imageWidth/2, -imageHeight/2) in center-origin
-					// Convert to canvas coordinates: add canvas center
-					var centerX = canvas.width / 2;
-					var centerY = canvas.height / 2;
-					var imgX = centerX - (imageWidth / 2);
-					var imgY = centerY - (imageHeight / 2);
-					
-					// Draw image centered and fitted (this will cover the gray background from Frame library)
-					ctx.globalCompositeOperation = 'source-over';
-					ctx.drawImage(photoImg, imgX, imgY, imageWidth, imageHeight);
-				};
-				photoImg.onerror = function() {
-					if (attempts < 5) {
-						redrawImage(attempts + 1);
-					}
-				};
-				photoImg.src = selectedPhoto;
-			}, 200 + (attempts * 50));
-		};
-		
-		redrawImage(0);
-	}
+	
+    function renderCanvas() {
+
+        var canvas = document.getElementById('testCanvas');
+        if (!canvas) return;
+
+        $('#testCanvas').css({
+            width: currentWidth + 'px',
+            height: currentHeight + 'px'
+        });
+
+        canvas.width = currentWidth;
+        canvas.height = currentHeight;
+
+        if (!selectedPhoto) return;
+
+        var frameThickness = 15;
+        var matThickness = 40;
+
+        var matWidth = currentWidth - frameThickness * 2;
+        var matHeight = currentHeight - frameThickness * 2;
+
+        var imageWidth = matWidth - matThickness * 2;
+        var imageHeight = matHeight - matThickness * 2;
+
+        imageWidth = Math.max(imageWidth, 50);
+        imageHeight = Math.max(imageHeight, 50);
+
+        new Frame({
+            canvas: $('#testCanvas'),
+            pxPerMM: 1,
+            frame: {
+                file: selectedFrame,
+                thickness: frameThickness
+            },
+            mount: {
+                layers: [
+                    {
+                        color: '#ff69b4', // ✅ Pink mat
+                        padding: {
+                            top: matThickness,
+                            bottom: matThickness,
+                            left: matThickness,
+                            right: matThickness
+                        }
+                    }
+                ],
+                sections: [
+                    [
+                        { width: imageWidth, height: imageHeight }
+                    ]
+                ]
+            },
+            photos: [selectedPhoto]
+        });
+    }
 
 	function updatePreview() {
 		var newWidth = parseInt($('#inputWidth').val());
