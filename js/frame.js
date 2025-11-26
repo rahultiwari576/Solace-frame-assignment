@@ -1,8 +1,3 @@
-/**
- * Author: Lee Langley
- * Date Created: 18/09/2012 10:05
- * @version 1
- */
 
 Frame = function(userOptions){
 	if(typeof FlashCanvas != 'undefined'){
@@ -68,9 +63,7 @@ Frame = function(userOptions){
 		imageCount;
 
 
-	/**
-	 * Initialises the frame
-	 */
+	
 	this.init = function(userOptions){
 		var i = 0;
 
@@ -281,9 +274,7 @@ Frame = function(userOptions){
 		Frame.draw();
 	};
 
-	/**
-	 * Callback for successful image loads
-	 */
+	
 	var imageLoadCallback = function(){
 		loaded++;
 		if(loaded == imageCount){
@@ -292,12 +283,6 @@ Frame = function(userOptions){
 		}
 	};
 
-	/**
-	 * Callback for failed image loads
-	 *
-	 * @param file
-	 * @return {Boolean}
-	 */
 	var imageErrorCallback = function(file){
 		if((file.file === null) || (file.file.loadCount >= options.fileLoadTries)){
 			// we have reached the max failed attempts
@@ -317,9 +302,7 @@ Frame = function(userOptions){
 		file.file.loadCount++;
 	};
 
-	/**
-	 * calculate the frame sizes
-	 */
+	
 	var calculateSizes = function(){
 		var i = 0, j = 0;
 
@@ -502,18 +485,7 @@ Frame = function(userOptions){
 		}
 	};
 
-	/**
-	 * Handle function for drawing frames (rims & slips)
-	 *
-	 * @param x1
-	 * @param y1
-	 * @param x2
-	 * @param y2
-	 * @param thickness
-	 * @param file
-	 * @param fillColor
-	 * @param shadow
-	 */
+	
 	var drawFrame = function(x1, y1, x2, y2, thickness, file, fillColor, shadow){
 		thickness = parseInt(thickness) || 0;
 
@@ -626,10 +598,7 @@ Frame = function(userOptions){
 		}
 	};
 
-	/**
-	 * Draw the backing mount (not including
-	 * any photo sections or photos)
-	 */
+	
 	var drawMount = function(mountLayer, coords, border, padding){
 		if(mountLayer){
 			if(mountLayer.color){
@@ -709,9 +678,7 @@ Frame = function(userOptions){
 		}
 	};
 
-	/**
-	 * Draw the actual frame rim
-	 */
+	
 	var drawRim = function(){
 		if(frame.thickness > 0){
 			var frameCoords = {
@@ -724,9 +691,7 @@ Frame = function(userOptions){
 		}
 	};
 
-	/**
-	 * Draw the frame slip
-	 */
+	
 	var drawSlip = function(){
 		if(slip.thickness > 0){
 			var frameCoords = {
@@ -739,17 +704,7 @@ Frame = function(userOptions){
 		}
 	};
 
-	/**
-	 * draw a mount picture section with the specified
-	 * width and height and originating from the center
-	 * of the frame.
-	 *
-	 * If image is defined, then it will also draw that.
-	 *
-	 * @param width
-	 * @param height
-	 * @param image
-	 */
+	
 	var drawImageBlock = function(width, height, x, y, image){
 		// calculate the starting x/y coordinates
 		var x1 = (typeof x == 'number') ? x : -(width/2),
@@ -796,10 +751,7 @@ Frame = function(userOptions){
 		}
 	};
 
-	/**
-	 * Draws all of the frame components;
-	 * Frame, mount, slide, images etc
-	 */
+	
 	this.draw = function(){
 		// draw the mount
 		if(mount.layers.length > 0){
@@ -874,9 +826,7 @@ Frame = function(userOptions){
 		drawSlip();
 	};
 
-	/**
-	 * Saves the frame as an image
-	 */
+	
 	this.save = function(){
 		if(typeof canvas2png != 'undefined'){
 			try{
@@ -902,30 +852,7 @@ Frame = function(userOptions){
 		}
 	}
 
-	/**
-	 * Takes a hexedecimal or RGB colour and returns
-	 * a colour that is different by the specified shade.
-	 *
-	 *
-	 * colour can be defined as a Hexdecimal value:
-	 * #f5dd66, f04eaa (with or without the hash)
-	 *
-	 * An array of RGB values:
-	 * [0, 245, 67] (R,G,B)
-	 *
-	 * Or an object with the variables 'r', 'g', and 'b':
-	 * {
-	 *     r:0,
-	 *     g:245,
-	 *     b:67
-	 * }
-	 *
-	 * The returned value will be of the same type as the given colour
-	 *
-	 * @param colour
-	 * @param shade
-	 * @return {String}|{object}
-	 */
+	
 	var shadeColor = function(colour, shade){
 		var R = 0, G = 0, B = 0;
 

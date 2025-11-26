@@ -1,9 +1,4 @@
-/*
- * FlashCanvas Pro
- *
- * Copyright (c) 2009      Tim Cameron Ryan
- * Copyright (c) 2009-2011 Shinya Muramatsu
- */
+
 window.ActiveXObject&&!window.CanvasRenderingContext2D&&function(l,k,q){function N(a){this.code=a;this.message=fa[a]}function v(a,b,c){if(!c)for(var c=[],d=0,e=a*b*4;d<e;++d)c[d]=0;this.width=a;this.height=b;this.data=c}function ga(a){this.width=a}function w(a){this.id=a.F++}function o(a){this.J=a;this.id=a.F++}function A(a,b){this.canvas=a;this.z=b;this.e=b.id.slice(8);this.G();this.F=0;this.j=this.D="";this.d=0}function B(){if(k.readyState==="complete"){k.detachEvent(O,B);for(var a=k.getElementsByTagName(r),
 b=0,c=a.length;b<c;++b)C.initElement(a[b])}}function P(){var a=event.srcElement,b=a.parentNode;a.blur();b.focus()}function D(){event.button&2&&event.srcElement.parentNode.setCapture()}function E(){event.button&2&&event.srcElement.parentNode.releaseCapture()}function Q(){var a=event.propertyName;if(a==="width"||a==="height"){var b=event.srcElement,c=b[a],d=parseInt(c,10);if(isNaN(d)||d<0)d=a==="width"?300:150;c===d?(b.style[a]=d+"px",b.getContext("2d").K(b.width,b.height)):b[a]=d}}function R(){l.detachEvent(S,
 R);for(var a in j){var b=j[a],c=b.firstChild,d;for(d in c)typeof c[d]==="function"&&(c[d]=g);for(d in b)typeof b[d]==="function"&&(b[d]=g);c.detachEvent(T,P);c.detachEvent(F,D);b.detachEvent(G,E);b.detachEvent(U,Q)}l[V]=g;l[W]=g;l[X]=g;l[H]=g;l[Y]=g}function ha(a){return a.toLowerCase()}function i(a){throw new N(a);}function Z(a){var b=parseInt(a.width,10),c=parseInt(a.height,10);if(isNaN(b)||b<0)b=300;if(isNaN(c)||c<0)c=150;a.width=b;a.height=c}function I(a,b){for(var c in j){var d=j[c].getContext("2d");

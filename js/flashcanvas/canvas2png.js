@@ -1,10 +1,3 @@
-/*
- * canvas2png.js
- *
- * Copyright (c) 2010-2011 Shinya Muramatsu
- * Released under the MIT License
- * http://flashcanvas.net/
- */
 
 (function(doc) {
 
