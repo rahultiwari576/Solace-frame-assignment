@@ -1,4 +1,11 @@
-﻿<!DOCTYPE html>
+﻿
+<?php
+//  echo phpinfo();
+
+// var_dump(function_exists('imagecreatefrompng'));
+ ?>
+
+<!DOCTYPE html>
 <html>
 	<head>
 		<title>Solace-infotech</title>
@@ -135,7 +142,10 @@
 									<h5>Sample Images (Nature & Landscapes):</h5>
 									<div id="samplePhotos" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
 										<?php
+
 										$sampleFiles = glob('samples/*.{webp,jpg,jpeg,png,JPG,JPEG,PNG}', GLOB_BRACE);
+                                        // var_dump(glob(__DIR__.'/samples/*'));
+                                        // exit;
 										foreach($sampleFiles as $file) {
 											$fileName = basename($file);
 											$displayName = str_replace(array('_', '.webp', '.jpg', '.jpeg', '.png'), array(' ', '', '', '', ''), $fileName);

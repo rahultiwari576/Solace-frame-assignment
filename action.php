@@ -1,6 +1,6 @@
 <?php
 error_reporting(E_ALL);
-ini_set('display_errors', 0);
+ini_set('display_errors', 1);
 session_start();
 
 if(isset($_POST["submit"])) {
@@ -32,32 +32,51 @@ if(isset($_POST["submit"])) {
         $imageType = $sourceProperties[2];
 
 
+        $imageResourceId = false;
+        $targetLayer = false;
+        
         switch ($imageType) {
-
-
             case IMAGETYPE_PNG:
-                $imageResourceId = imagecreatefrompng($file); 
+                $imageResourceId = @imagecreatefrompng($file); 
+                if($imageResourceId === false) {
+                    $_SESSION['error'] = "Failed to process PNG image. Please try another image.";
+                    header('location:index.php');
+                    exit;
+                }
                 $targetLayer = imageResize($imageResourceId,$sourceProperties[0],$sourceProperties[1]);
-                imagepng($targetLayer,$folderPath. $fileNewName. "_thump.". $ext);
-                $_SESSION['picture']=$folderPath. $fileNewName. "_thump.". $ext;
+                if($targetLayer !== false) {
+                    imagepng($targetLayer,$folderPath. $fileNewName. "_thump.". $ext);
+                    $_SESSION['picture']=$folderPath. $fileNewName. "_thump.". $ext;
+                }
                 break;
-
 
             case IMAGETYPE_GIF:
-                $imageResourceId = imagecreatefromgif($file); 
+                $imageResourceId = @imagecreatefromgif($file); 
+                if($imageResourceId === false) {
+                    $_SESSION['error'] = "Failed to process GIF image. Please try another image.";
+                    header('location:index.php');
+                    exit;
+                }
                 $targetLayer = imageResize($imageResourceId,$sourceProperties[0],$sourceProperties[1]);
-                imagegif($targetLayer,$folderPath. $fileNewName. "_thump.". $ext);
-                 $_SESSION['picture']=$folderPath. $fileNewName. "_thump.". $ext;
+                if($targetLayer !== false) {
+                    imagegif($targetLayer,$folderPath. $fileNewName. "_thump.". $ext);
+                    $_SESSION['picture']=$folderPath. $fileNewName. "_thump.". $ext;
+                }
                 break;
-
 
             case IMAGETYPE_JPEG:
-                $imageResourceId = imagecreatefromjpeg($file); 
+                $imageResourceId = @imagecreatefromjpeg($file); 
+                if($imageResourceId === false) {
+                    $_SESSION['error'] = "Failed to process JPEG image. Please try another image.";
+                    header('location:index.php');
+                    exit;
+                }
                 $targetLayer = imageResize($imageResourceId,$sourceProperties[0],$sourceProperties[1]);
-                imagejpeg($targetLayer,$folderPath. $fileNewName. "_thump.". $ext);
-                 $_SESSION['picture']=$folderPath. $fileNewName. "_thump.". $ext;
+                if($targetLayer !== false) {
+                    imagejpeg($targetLayer,$folderPath. $fileNewName. "_thump.". $ext);
+                    $_SESSION['picture']=$folderPath. $fileNewName. "_thump.". $ext;
+                }
                 break;
-
 
             default:
                 $_SESSION['error'] = "Invalid Image type. Please upload JPG, PNG, or GIF images only.";
@@ -66,9 +85,13 @@ if(isset($_POST["submit"])) {
                 break;
         }
 
-        // Free memory
-        imagedestroy($imageResourceId);
-        imagedestroy($targetLayer);
+        // Free memory only if resources were created
+        if($imageResourceId !== false && is_resource($imageResourceId)) {
+            @imagedestroy($imageResourceId);
+        }
+        if($targetLayer !== false && is_resource($targetLayer)) {
+            @imagedestroy($targetLayer);
+        }
         
         header('location:index.php');
         exit;
